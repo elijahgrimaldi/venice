@@ -18,6 +18,7 @@ import static com.linkedin.venice.kafka.TopicManager.DEFAULT_KAFKA_OPERATION_TIM
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.sleep;
 
+import com.linkedin.davinci.client.DaVinciRecordTransformer;
 import com.linkedin.davinci.compression.StorageEngineBackedCompressorFactory;
 import com.linkedin.davinci.config.VeniceConfigLoader;
 import com.linkedin.davinci.config.VeniceServerConfig;
@@ -210,6 +211,9 @@ public class KafkaStoreIngestionService extends AbstractVeniceService implements
   private final ResourceAutoClosableLockManager<String> topicLockManager;
 
   private final PubSubTopicRepository pubSubTopicRepository = new PubSubTopicRepository();
+
+  private final Optional<DaVinciRecordTransformer> recordTransformer;
+
   private Optional<SSLFactory> sslFactory;
 
   private KafkaValueSerializer kafkaValueSerializer;
@@ -233,11 +237,13 @@ public class KafkaStoreIngestionService extends AbstractVeniceService implements
       boolean isIsolatedIngestion,
       StorageEngineBackedCompressorFactory compressorFactory,
       Optional<ObjectCacheBackend> cacheBackend,
+      Optional<DaVinciRecordTransformer> recordTransformer,
       boolean isDaVinciClient,
       RemoteIngestionRepairService remoteIngestionRepairService,
       PubSubClientsFactory pubSubClientsFactory,
       Optional<SSLFactory> sslFactory) {
     this.cacheBackend = cacheBackend;
+    this.recordTransformer = recordTransformer;
     this.storageMetadataService = storageMetadataService;
     this.metadataRepo = metadataRepo;
     this.schemaRepo = schemaRepo;

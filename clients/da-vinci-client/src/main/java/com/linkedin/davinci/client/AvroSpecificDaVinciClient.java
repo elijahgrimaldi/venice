@@ -16,12 +16,14 @@ public class AvroSpecificDaVinciClient<K, V extends SpecificRecord> extends Avro
       ClientConfig clientConfig,
       VeniceProperties backendConfig,
       Optional<Set<String>> managedClients,
+      Optional<DaVinciRecordTransformer> recordTransformer,
       ICProvider icProvider) {
     super(
         daVinciConfig,
         clientConfig,
         backendConfig,
         managedClients,
+        recordTransformer,
         icProvider,
         new SpecificRecordChunkingAdapter<>(),
         () -> {

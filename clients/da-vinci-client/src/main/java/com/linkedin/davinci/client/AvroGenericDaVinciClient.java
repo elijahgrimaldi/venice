@@ -107,6 +107,7 @@ public class AvroGenericDaVinciClient<K, V> implements DaVinciClient<K, V>, Avro
   private final AtomicBoolean ready = new AtomicBoolean(false);
   // TODO: Implement copy-on-write ComplementSet to support concurrent modification and reading.
   private final ComplementSet<Integer> subscription = ComplementSet.emptySet();
+  private final Optional<DaVinciRecordTransformer> recordTransformer;
 
   private RecordSerializer<K> keySerializer;
   private RecordDeserializer<K> keyDeserializer;
@@ -125,7 +126,7 @@ public class AvroGenericDaVinciClient<K, V> implements DaVinciClient<K, V>, Avro
       ClientConfig clientConfig,
       VeniceProperties backendConfig,
       Optional<Set<String>> managedClients) {
-    this(daVinciConfig, clientConfig, backendConfig, managedClients, null);
+    this(daVinciConfig, clientConfig, backendConfig, managedClients, null, null);
   }
 
   public AvroGenericDaVinciClient(
@@ -133,12 +134,14 @@ public class AvroGenericDaVinciClient<K, V> implements DaVinciClient<K, V>, Avro
       ClientConfig clientConfig,
       VeniceProperties backendConfig,
       Optional<Set<String>> managedClients,
+      Optional<DaVinciRecordTransformer> recordTransformer,
       ICProvider icProvider) {
     this(
         daVinciConfig,
         clientConfig,
         backendConfig,
         managedClients,
+        recordTransformer,
         icProvider,
         GenericChunkingAdapter.INSTANCE,
         () -> {});
@@ -149,6 +152,7 @@ public class AvroGenericDaVinciClient<K, V> implements DaVinciClient<K, V>, Avro
       ClientConfig clientConfig,
       VeniceProperties backendConfig,
       Optional<Set<String>> managedClients,
+      Optional<DaVinciRecordTransformer> recordTransformer,
       ICProvider icProvider,
       AbstractAvroChunkingAdapter<V> chunkingAdapter,
       Runnable preValidation) {
@@ -157,6 +161,7 @@ public class AvroGenericDaVinciClient<K, V> implements DaVinciClient<K, V>, Avro
     this.clientConfig = clientConfig;
     this.backendConfig = backendConfig;
     this.managedClients = managedClients;
+    this.recordTransformer = recordTransformer;
     this.icProvider = icProvider;
     this.chunkingAdapter = chunkingAdapter;
     preValidation.run();
@@ -676,6 +681,7 @@ public class AvroGenericDaVinciClient<K, V> implements DaVinciClient<K, V>, Avro
       ClientConfig clientConfig,
       VeniceConfigLoader configLoader,
       Optional<Set<String>> managedClients,
+      Optional<DaVinciRecordTransformer> recordTransformer,
       ICProvider icProvider,
       Optional<ObjectCacheConfig> cacheConfig) {
     synchronized (AvroGenericDaVinciClient.class) {
@@ -683,7 +689,7 @@ public class AvroGenericDaVinciClient<K, V> implements DaVinciClient<K, V>, Avro
         logger
             .info("Da Vinci Backend does not exist, creating a new backend for client: " + clientConfig.getStoreName());
         daVinciBackend = new ReferenceCounted<>(
-            new DaVinciBackend(clientConfig, configLoader, managedClients, icProvider, cacheConfig),
+            new DaVinciBackend(clientConfig, configLoader, managedClients, recordTransformer, icProvider, cacheConfig),
             backend -> {
               // Ensure that existing backend is fully closed before a new one can be created.
               synchronized (AvroGenericDaVinciClient.class) {
@@ -719,7 +725,7 @@ public class AvroGenericDaVinciClient<K, V> implements DaVinciClient<K, V>, Avro
     logger.info("Starting client, storeName=" + getStoreName());
     VeniceConfigLoader configLoader = buildVeniceConfig();
     Optional<ObjectCacheConfig> cacheConfig = Optional.ofNullable(daVinciConfig.getCacheConfig());
-    initBackend(clientConfig, configLoader, managedClients, icProvider, cacheConfig);
+    initBackend(clientConfig, configLoader, managedClients, recordTransformer, icProvider, cacheConfig);
 
     try {
       if (!getBackend().compareCacheConfig(cacheConfig)) {

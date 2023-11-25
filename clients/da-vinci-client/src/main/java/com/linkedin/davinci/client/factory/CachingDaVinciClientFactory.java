@@ -5,6 +5,7 @@ import com.linkedin.davinci.client.AvroGenericDaVinciClient;
 import com.linkedin.davinci.client.AvroSpecificDaVinciClient;
 import com.linkedin.davinci.client.DaVinciClient;
 import com.linkedin.davinci.client.DaVinciConfig;
+import com.linkedin.davinci.client.DaVinciRecordTransformer;
 import com.linkedin.davinci.client.StatsAvroGenericDaVinciClient;
 import com.linkedin.davinci.client.StatsAvroSpecificDaVinciClient;
 import com.linkedin.venice.client.store.ClientConfig;
@@ -37,6 +38,7 @@ public class CachingDaVinciClientFactory implements DaVinciClientFactory, Closea
   protected final Map<String, DaVinciClient> sharedClients = new HashMap<>();
   protected final List<DaVinciClient> isolatedClients = new ArrayList<>();
   protected final Map<String, DaVinciConfig> configs = new HashMap<>();
+  protected final Optional<DaVinciRecordTransformer> recordTransformer;
 
   @Deprecated
   public CachingDaVinciClientFactory(
@@ -57,7 +59,8 @@ public class CachingDaVinciClientFactory implements DaVinciClientFactory, Closea
         ClientConfig.DEFAULT_CLUSTER_DISCOVERY_D2_SERVICE_NAME,
         metricsRepository,
         backendConfig,
-        managedClients);
+        managedClients,
+        null);
   }
 
   @Deprecated
@@ -73,6 +76,7 @@ public class CachingDaVinciClientFactory implements DaVinciClientFactory, Closea
         metricsRepository,
         backendConfig,
         managedClients,
+        null,
         icProvider);
   }
 
@@ -89,8 +93,16 @@ public class CachingDaVinciClientFactory implements DaVinciClientFactory, Closea
       String clusterDiscoveryD2ServiceName,
       MetricsRepository metricsRepository,
       VeniceProperties backendConfig,
-      Optional<Set<String>> managedClients) {
-    this(d2Client, clusterDiscoveryD2ServiceName, metricsRepository, backendConfig, managedClients, null);
+      Optional<Set<String>> managedClients,
+      Optional<DaVinciRecordTransformer> recordTransformer) {
+    this(
+        d2Client,
+        clusterDiscoveryD2ServiceName,
+        metricsRepository,
+        backendConfig,
+        managedClients,
+        recordTransformer,
+        null);
   }
 
   public CachingDaVinciClientFactory(
@@ -99,6 +111,7 @@ public class CachingDaVinciClientFactory implements DaVinciClientFactory, Closea
       MetricsRepository metricsRepository,
       VeniceProperties backendConfig,
       Optional<Set<String>> managedClients,
+      Optional<DaVinciRecordTransformer> recordTransformer,
       ICProvider icProvider) {
     LOGGER.info(
         "Creating client factory, managedClients={}, existingMetrics={}",
@@ -110,6 +123,7 @@ public class CachingDaVinciClientFactory implements DaVinciClientFactory, Closea
     this.backendConfig = backendConfig;
     this.managedClients = managedClients;
     this.icProvider = icProvider;
+    this.recordTransformer = recordTransformer;
   }
 
   @Override
@@ -204,6 +218,7 @@ public class CachingDaVinciClientFactory implements DaVinciClientFactory, Closea
         ClientConfig clientConfig,
         VeniceProperties backendConfig,
         Optional<Set<String>> managedClients,
+        Optional<DaVinciRecordTransformer> recordTransformer,
         ICProvider icProvider);
   }
 
@@ -214,9 +229,15 @@ public class CachingDaVinciClientFactory implements DaVinciClientFactory, Closea
         ClientConfig clientConfig,
         VeniceProperties backendConfig,
         Optional<Set<String>> managedClients,
+        Optional<DaVinciRecordTransformer> recordTransformer,
         ICProvider icProvider) {
-      AvroGenericDaVinciClient<K, V> client =
-          new AvroGenericDaVinciClient<>(config, clientConfig, backendConfig, managedClients, icProvider);
+      AvroGenericDaVinciClient<K, V> client = new AvroGenericDaVinciClient<>(
+          config,
+          clientConfig,
+          backendConfig,
+          managedClients,
+          recordTransformer,
+          icProvider);
       if (config.isReadMetricsEnabled()) {
         return new StatsAvroGenericDaVinciClient<>(client, clientConfig);
       }
@@ -231,9 +252,15 @@ public class CachingDaVinciClientFactory implements DaVinciClientFactory, Closea
         ClientConfig clientConfig,
         VeniceProperties backendConfig,
         Optional<Set<String>> managedClients,
+        Optional<DaVinciRecordTransformer> recordTransformer,
         ICProvider icProvider) {
-      AvroSpecificDaVinciClient<K, V> client =
-          new AvroSpecificDaVinciClient<>(config, clientConfig, backendConfig, managedClients, icProvider);
+      AvroSpecificDaVinciClient<K, V> client = new AvroSpecificDaVinciClient<>(
+          config,
+          clientConfig,
+          backendConfig,
+          managedClients,
+          recordTransformer,
+          icProvider);
       if (config.isReadMetricsEnabled()) {
         return new StatsAvroSpecificDaVinciClient<>(client, clientConfig);
       }
@@ -274,7 +301,8 @@ public class CachingDaVinciClientFactory implements DaVinciClientFactory, Closea
     if (config.isIsolated()) {
       String statsPrefix = "davinci-client-" + isolatedClients.size();
       clientConfig.setStatsPrefix(statsPrefix);
-      client = clientConstructor.apply(config, clientConfig, backendConfig, managedClients, icProvider);
+      client =
+          clientConstructor.apply(config, clientConfig, backendConfig, managedClients, recordTransformer, icProvider);
       isolatedClients.add(client);
     } else {
       if (originalConfig.getNonLocalAccessPolicy() != config.getNonLocalAccessPolicy()) {
@@ -285,7 +313,8 @@ public class CachingDaVinciClientFactory implements DaVinciClientFactory, Closea
 
       client = sharedClients.computeIfAbsent(
           storeName,
-          k -> clientConstructor.apply(config, clientConfig, backendConfig, managedClients, icProvider));
+          k -> clientConstructor
+              .apply(config, clientConfig, backendConfig, managedClients, recordTransformer, icProvider));
 
       if (!clientClass.isInstance(client)) {
         throw new VeniceException(
