@@ -598,7 +598,8 @@ public class KafkaStoreIngestionService extends AbstractVeniceService implements
         veniceStoreVersionConfig,
         partitionId,
         isIsolatedIngestion,
-        cacheBackend);
+        cacheBackend,
+        recordTransformer);
   }
 
   private static void shutdownExecutorService(ExecutorService executor, String name, boolean force) {

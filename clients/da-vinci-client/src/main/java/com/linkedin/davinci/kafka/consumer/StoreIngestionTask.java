@@ -9,6 +9,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.linkedin.davinci.client.DaVinciRecordTransformer;
 import com.linkedin.davinci.compression.StorageEngineBackedCompressorFactory;
 import com.linkedin.davinci.config.VeniceServerConfig;
 import com.linkedin.davinci.config.VeniceStoreVersionConfig;
@@ -283,6 +284,7 @@ public abstract class StoreIngestionTask implements Runnable, Closeable {
   protected final StatusReportAdapter statusReportAdapter;
 
   private final Optional<ObjectCacheBackend> cacheBackend;
+  private final Optional<DaVinciRecordTransformer> recordTransformer;
   private final Runnable runnableForKillIngestionTasksForMissingSOP;
 
   protected final String localKafkaServer;
@@ -320,6 +322,7 @@ public abstract class StoreIngestionTask implements Runnable, Closeable {
       int errorPartitionId,
       boolean isIsolatedIngestion,
       Optional<ObjectCacheBackend> cacheBackend,
+      Optional<DaVinciRecordTransformer> recordTransformer,
       Queue<VeniceNotifier> notifiers) {
     this.readCycleDelayMs = storeConfig.getKafkaReadCycleDelayMs();
     this.emptyPollSleepMs = storeConfig.getKafkaEmptyPollSleepMs();
@@ -419,6 +422,7 @@ public abstract class StoreIngestionTask implements Runnable, Closeable {
     this.runnableForKillIngestionTasksForMissingSOP = () -> waitForStateVersion(kafkaVersionTopic);
     this.missingSOPCheckExecutor.execute(runnableForKillIngestionTasksForMissingSOP);
     this.cacheBackend = cacheBackend;
+    this.recordTransformer = recordTransformer;
     this.localKafkaServer = this.kafkaProps.getProperty(KAFKA_BOOTSTRAP_SERVERS);
     this.localKafkaServerSingletonSet = Collections.singleton(localKafkaServer);
     this.isDaVinciClient = builder.isDaVinciClient();
