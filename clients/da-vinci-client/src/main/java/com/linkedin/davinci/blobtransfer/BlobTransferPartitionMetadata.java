@@ -11,6 +11,7 @@ public class BlobTransferPartitionMetadata {
   public int partitionId;
   public java.nio.ByteBuffer offsetRecord;
   public java.nio.ByteBuffer storeVersionState;
+  public java.nio.ByteBuffer transformerChecksum;
 
   public BlobTransferPartitionMetadata() {
   }
@@ -19,11 +20,13 @@ public class BlobTransferPartitionMetadata {
       @JsonProperty("topicName") String topicName,
       @JsonProperty("partitionId") int partitionId,
       @JsonProperty("offsetRecord") java.nio.ByteBuffer offsetRecord,
-      @JsonProperty("storeVersionState") java.nio.ByteBuffer storeVersionState) {
+      @JsonProperty("storeVersionState") java.nio.ByteBuffer storeVersionState,
+      @JsonProperty("transformerChecksum") java.nio.ByteBuffer transformerChecksum) {
     this.topicName = topicName;
     this.partitionId = partitionId;
     this.offsetRecord = offsetRecord;
     this.storeVersionState = storeVersionState;
+    this.transformerChecksum = transformerChecksum;
   }
 
   public String getTopicName() {
@@ -58,9 +61,18 @@ public class BlobTransferPartitionMetadata {
     return storeVersionState;
   }
 
+  public java.nio.ByteBuffer getTransformerChecksum() {
+    return transformerChecksum;
+  }
+
+  public void setTransformerChecksum(java.nio.ByteBuffer transformerChecksum) {
+    this.transformerChecksum = transformerChecksum;
+  }
+
   @Override
   public String toString() {
-    return "BlobTransferPartitionMetadata {" + " topicName='" + topicName + ", partitionId=" + partitionId
-        + ", offsetRecord=" + offsetRecord + ", storeVersionState=" + storeVersionState + " }";
+    return "BlobTransferPartitionMetadata {" + " topicName=" + topicName + ", partitionId=" + partitionId
+        + ", offsetRecord=" + offsetRecord + ", storeVersionState=" + storeVersionState + ", transformerChecksum="
+        + transformerChecksum + " }";
   }
 }

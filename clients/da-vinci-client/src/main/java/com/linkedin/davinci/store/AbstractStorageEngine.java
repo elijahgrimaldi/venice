@@ -59,6 +59,7 @@ public abstract class AbstractStorageEngine<Partition extends AbstractStoragePar
   private static final Logger LOGGER = LogManager.getLogger(AbstractStorageEngine.class);
 
   private static final byte[] VERSION_METADATA_KEY = "VERSION_METADATA".getBytes();
+  private static final byte[] TRANSFORMER_CHECKSUM_KEY = "TRANSFORMER_CHECKSUM".getBytes();
   private static final String PARTITION_METADATA_PREFIX = "P_";
 
   // Using a large positive number for metadata partition id instead of -1 can avoid database naming issues.
@@ -625,6 +626,27 @@ public abstract class AbstractStorageEngine<Partition extends AbstractStoragePar
     versionStateCache.set(versionState);
     metadataPartition
         .put(VERSION_METADATA_KEY, storeVersionStateSerializer.serialize(getStoreVersionName(), versionState));
+  }
+
+  /**
+   * Put the DaVinci record transformer checksum into the metadata partition.
+   */
+  public synchronized void putTransformerChecksum(Integer transformerChecksum) {
+    if (!metadataPartitionCreated()) {
+      throw new StorageInitializationException("Metadata partition not created!");
+    }
+    metadataPartition.put(TRANSFORMER_CHECKSUM_KEY, transformerChecksum.byteValue());
+  }
+
+  /**
+   * Retrieve the transformer checksum from the metadata partition.
+   */
+  public Integer getTransformerChecksum() {
+    byte[] value = metadataPartition.get(VERSION_METADATA_KEY);
+    if (value == null) {
+      return null;
+    }
+    return ByteBuffer.wrap(value).getInt();
   }
 
   /**

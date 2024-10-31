@@ -86,6 +86,14 @@ public class StorageEngineMetadataService extends AbstractVeniceService implemen
     }
   }
 
+  public Integer getTransformerChecksum(String topicName) throws VeniceException {
+    try {
+      return getStorageEngineOrThrow(topicName).getTransformerChecksum();
+    } catch (VeniceException e) {
+      return null;
+    }
+  }
+
   private AbstractStorageEngine<? extends AbstractStoragePartition> getStorageEngineOrThrow(String topicName) {
     AbstractStorageEngine<?> storageEngine = this.storageEngineRepository.getLocalStorageEngine(topicName);
     if (storageEngine == null) {

@@ -30,6 +30,14 @@ public interface StorageMetadataService extends OffsetManager {
   StoreVersionState getStoreVersionState(String topicName) throws VeniceException;
 
   /**
+   * Gets the currently-persisted {@link StoreVersionState} for this topic.
+   *
+   * @param topicName  kafka topic to which the consumer thread is registered to.
+   * @return an instance of {@link StoreVersionState} corresponding to this topic, or null if there isn't any.
+   */
+  Integer getTransformerChecksum(String topicName) throws VeniceException;
+
+  /**
    * Tailored function for retrieving version's compression dictionary.
    */
   default ByteBuffer getStoreVersionCompressionDictionary(String topicName) {

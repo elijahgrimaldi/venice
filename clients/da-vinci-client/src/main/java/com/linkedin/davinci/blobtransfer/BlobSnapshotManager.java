@@ -321,10 +321,14 @@ public class BlobSnapshotManager {
         storageMetadataService.getLastOffset(blobTransferRequest.getTopicName(), blobTransferRequest.getPartition());
     java.nio.ByteBuffer offsetRecordByte = ByteBuffer.wrap(offsetRecord.toBytes());
 
+    Integer transformerChecksum = storageMetadataService.getTransformerChecksum(blobTransferRequest.getTopicName());
+    java.nio.ByteBuffer transformChecksumByte = ByteBuffer.allocate(4).putInt(transformerChecksum);
+
     return new BlobTransferPartitionMetadata(
         blobTransferRequest.getTopicName(),
         blobTransferRequest.getPartition(),
         offsetRecordByte,
-        storeVersionStateByte);
+        storeVersionStateByte,
+        transformChecksumByte);
   }
 }
